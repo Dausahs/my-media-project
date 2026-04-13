@@ -2,6 +2,8 @@ import { getGalleryItems, parseFilename } from "@/lib/drive";
 import { getMediaMetadata } from "@/lib/supabase";
 import { ArrowRight, Play, Film, Calendar, MapPin, Users } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const gallery = await getGalleryItems();
   const metadata = await getMediaMetadata();
