@@ -49,7 +49,7 @@ export async function getGalleryItems() {
           name: `YouTube Video`,
           videoUrl: `https://www.youtube.com/watch?v=${videoId}`, 
           thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-          embedLink: `https://www.youtube.com/embed/${videoId}?autoplay=1`,
+          embedLink: `https://www.youtube.com/watch?v=${videoId}`,
           mimeType: "video/youtube"
         };
       }
