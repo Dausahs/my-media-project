@@ -1,5 +1,5 @@
 import { UploadCloud, FolderLock, FileVideo, Save, Database, ArrowRight } from "lucide-react";
-import { uploadToDrive } from "@/lib/drive";
+import { uploadToDrive, addYouTubeLinkToDrive } from "@/lib/drive";
 import { saveMediaMetadata } from "@/lib/supabase";
 
 export default function AdminPortal() {
@@ -56,6 +56,37 @@ export default function AdminPortal() {
 
                 <button type="submit" className="w-full py-3 mt-2 rounded-xl bg-accent text-white font-semibold flex items-center justify-center gap-2 hover:bg-blue-600 transition-colors">
                   Upload to Drive <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
+
+            <div className="relative w-full my-6 flex items-center justify-center">
+              <div className="border-t border-white/10 w-full"></div>
+              <span className="absolute bg-[var(--background)] px-4 text-xs font-semibold text-neutral-500 uppercase tracking-widest">OR</span>
+            </div>
+
+            <form action={async (formData) => {
+              "use server";
+              const url = formData.get('youtubeUrl') as string;
+              if (url) {
+                try {
+                  await addYouTubeLinkToDrive(url);
+                  console.log("YouTube mapped");
+                } catch (e) {
+                  console.error(e);
+                }
+              }
+            }} className="w-full">
+              <div className="flex gap-2">
+                <input 
+                  type="url" 
+                  name="youtubeUrl" 
+                  placeholder="Paste YouTube Link..." 
+                  required 
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent transition-colors" 
+                />
+                <button type="submit" className="px-6 py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors">
+                  Add
                 </button>
               </div>
             </form>

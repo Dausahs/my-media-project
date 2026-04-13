@@ -17,11 +17,7 @@ function getDriveClient() {
   }
 
   const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
-  
-  // Set the refresh token so it can mint access tokens indefinitely on the fly
-  oauth2Client.setCredentials({
-    refresh_token: refreshToken
-  });
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
 
   return google.drive({ version: 'v3', auth: oauth2Client });
 }
@@ -38,14 +34,36 @@ export async function getGalleryItems() {
 
     const files = response.data.files || [];
 
-    return files.map(file => ({
-      id: file.id as string,
-      name: file.name as string,
-      videoUrl: file.webContentLink || file.webViewLink || "", 
-      thumbnail: file.thumbnailLink?.replace('=s220', '=s800') || "",
-      embedLink: file.webViewLink || "",
-      mimeType: file.mimeType || ""
-    }));
+    return files.map(file => {
+      const name = file.name as string;
+      
+      // MAGIC FEATURE: Treat specific files as YouTube links!
+      // Format: YOUTUBE_[VIDEO_ID].txt
+      if (name.startsWith('YOUTUBE_')) {
+        let videoId = name.replace('YOUTUBE_', '').trim();
+        if (videoId.endsWith('.txt')) {
+          videoId = videoId.slice(0, -4);
+        }
+        return {
+          id: file.id as string,
+          name: `YouTube Video`,
+          videoUrl: `https://www.youtube.com/watch?v=${videoId}`, 
+          thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+          embedLink: `https://www.youtube.com/embed/${videoId}?autoplay=1`,
+          mimeType: "video/youtube"
+        };
+      }
+
+      // Standard Google Drive File
+      return {
+        id: file.id as string,
+        name: name,
+        videoUrl: file.webContentLink || file.webViewLink || "", 
+        thumbnail: file.thumbnailLink?.replace('=s220', '=s800') || "",
+        embedLink: file.webViewLink || "",
+        mimeType: file.mimeType || ""
+      };
+    });
   } catch (error) {
     console.log("Drive Fetch Error Context:", error);
     return [];
@@ -55,7 +73,6 @@ export async function getGalleryItems() {
 export async function uploadToDrive(fileBuffer: Buffer, filename: string, mimeType: string) {
   try {
     const drive = getDriveClient();
-    
     const bufferStream = new stream.PassThrough();
     bufferStream.end(fileBuffer);
 
@@ -68,10 +85,9 @@ export async function uploadToDrive(fileBuffer: Buffer, filename: string, mimeTy
         mimeType: mimeType,
         body: bufferStream,
       },
-      fields: 'id, name, webContentLink, webViewLink'
+      fields: 'id'
     });
 
-    console.log("SUCCESSFULLY UPLOADED AS OWNER!", response.data.id);
     return response.data.id;
   } catch (error: any) {
     console.error("Upload failed (Check if OAuth scopes and Tokens are valid):", error);
@@ -79,9 +95,41 @@ export async function uploadToDrive(fileBuffer: Buffer, filename: string, mimeTy
   }
 }
 
+export async function addYouTubeLinkToDrive(youtubeUrl: string) {
+  try {
+    const drive = getDriveClient();
+    
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(shorts\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = youtubeUrl.match(regExp);
+    const videoId = (match && match[8].length === 11) ? match[8] : null;
+    
+    if (!videoId) throw new Error("Invalid YouTube URL");
+
+    // Create an empty text file in Drive to act as our database tracker
+    const filename = `YOUTUBE_${videoId}.txt`;
+    
+    const response = await drive.files.create({
+      requestBody: {
+        name: filename,
+        parents: [DRIVE_FOLDER_ID],
+        mimeType: 'text/plain'
+      },
+      media: {
+        mimeType: 'text/plain',
+        body: stream.Readable.from(["YouTube Marker File"]),
+      },
+      fields: 'id'
+    });
+
+    console.log("YouTube link saved to Drive successfully!");
+    return response.data.id;
+  } catch (error) {
+    console.error("Failed to add YouTube link", error);
+    throw new Error("YouTube Link failed");
+  }
+}
+
 export function parseFilename(filename: string) {
-  return filename
-    .replace(/\.[^/.]+$/, "") 
-    .split('_')
-    .join(' ');
+  if (filename === 'YouTube Video') return filename;
+  return filename.replace(/\.[^/.]+$/, "").split('_').join(' ');
 }

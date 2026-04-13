@@ -82,7 +82,7 @@ export default async function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {enrichedPortfolio.map((item, idx) => (
-              <div key={item.id} className="group cursor-pointer">
+              <a key={item.id} href={item.embedLink?.replace('/view', '/preview')} target="_blank" rel="noopener noreferrer" className="group cursor-pointer block">
                 <div className="relative overflow-hidden rounded-2xl aspect-[16/9] mb-4 bg-neutral-900 border border-white/5">
                   <img 
                     src={item.thumbnail || "https://images.unsplash.com/photo-1601506521937-0131109aabff?auto=format&fit=crop&q=80"} 
@@ -108,7 +108,7 @@ export default async function Home() {
                     <span className="flex items-center gap-1"><Film className="w-3 h-3" /> {item.name.replace(/\.[^/.]+$/, "")}</span>
                   </div>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         </div>
